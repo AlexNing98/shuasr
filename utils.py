@@ -1140,7 +1140,7 @@ def github():
             username, password = user_info.split(',')
         except Exception as e:
             print(e)
-            print('解析第%s位用户的用户名和密码失败！')
+            print('解析用户名和密码失败！')
             print('确保使用的是英文逗号和分号，且用户密码中也不包含英文逗号或分号')
             print('注意分号仅在间隔多个用户时才需要使用，USERS变量设置的内容末尾不需要带上分号')
             continue

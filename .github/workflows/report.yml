@@ -24,9 +24,8 @@ jobs:
           sudo apt-get --assume-yes --no-install-recommends install openvpn
           python3 ovpn.py
           touch vpn.log
-      - name: Connect and Test VPN connection
+      - name: Connect and Test OpenVPN Connection
         if: always()
-        timeout-minutes: 3
         run: sudo ./ovpn.sh
       - name: Report Start
         if: always()
@@ -34,7 +33,7 @@ jobs:
           users: ${{ secrets.USERS }}
           send: ${{ secrets.SEND }}
         run: "python -u main.py gh"
-      - name: Kill VPN connection
+      - name: Kill OpenVPN Connection
         if: always()
         run: |
           sudo chmod 777 vpn.log

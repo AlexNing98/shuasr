@@ -11,8 +11,8 @@ while true; do
       exit 0
     else
       test_times=$((test_times + 1))
-      if [ $test_times -gt 30 ]; then
-        echo "测试OpenVPN连接失败30次，将尝试重新连接......"
+      if [ $test_times -gt 15 ]; then
+        echo "测试OpenVPN连接失败15次，将尝试重新连接......"
         if killall openvpn; then
           echo "已停止OpenVPN进程"
         else
@@ -24,15 +24,19 @@ while true; do
     fi
   done
 
-  if [ $connect_times -gt 5 ]; then
-    echo "OpenVPN连接失败5次，将退出"
+  if [ $connect_times -gt 3 ]; then
+    echo "OpenVPN连接失败3次，将退出"
     exit 1
   fi
 
-  sleep_time=$((RANDOM % 900 + 300))
+  if [ $connect_times -gt 1 ]; then
+    sleep_time=$((RANDOM % 240 + 60))
+  else
+    sleep_time=$((RANDOM % 900 + 300))
+  fi
   echo "开始休眠 $sleep_time 秒"
   for ((i = 0; i < sleep_time; i = i + 5)); do
-    echo -ne "休眠中，剩余秒数：$((sleep_time - i))\r"
+    echo -ne "休眠中，剩余秒数：$((sleep_time - i))         \r"
     sleep 5
   done
 done

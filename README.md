@@ -2,9 +2,9 @@
 
 本项目可每天自动检测您是否已填报某校的每日一报，如果未填报，则可根据上次信息自动填报，并**提醒您下次不要忘记填报 : )**
 
-<div style="text-align: center;">
+<p align="center">
 <img alt="reminder" src="./img/reminder.jpg"/>
-</div>
+</p>
 
 ***项目仅供学习交流之用，请勿用于其它用途。请遵守当地防疫守则。***
 
@@ -92,9 +92,9 @@ Secret 的 `Name` 设置为 `SEND` ， `Value` 格式为 `send_api,send_key` ，
 #### v. 如何更新本项目
 ##### 自动更新
 安装 GitHub Apps 中的 [Pull App](https://github.com/apps/pull) ，保持你的 Fork 始终最新
-<div style="text-align: center;">
+<p align="center">
 <a href="https://github.com/apps/pull"><img alt="Pull App" height="50%" src="https://prod.download/pull-social-svg" width="50%" /></a>
-</div>
+</p>
 
 点击打开后进入到 Pull App 的主页，点击右侧的 `Install` 按钮进入安装页面。如下所示，安装时默认会应用到所有项目，可改为仅应用到本项目的 Fork
 

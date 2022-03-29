@@ -25,8 +25,13 @@ jobs:
           users: ${{ secrets.USERS }}
           send: ${{ secrets.SEND }}
         run: |
-          python -u main.py gh
-          if [ $? -ne 0 ] || [ -f "./use_ovpn" ] ; then echo "use_ovpn=1" >> $GITHUB_ENV; fi
+          if python -u main.py gh; then
+            if [ -f "./use_ovpn" ]; then
+              echo "use_ovpn=1" >> $GITHUB_ENV;
+            fi
+          else
+            echo "use_ovpn=1" >> $GITHUB_ENV;
+          fi
 
       - name: Configure OpenVPN
         if: ${{ env.use_ovpn == 1 }}

@@ -76,6 +76,26 @@
     ],
     "SelectedValueArray": []
   },
+  "p1_JinChuSQ": {
+    "F_Items": [
+      [
+        "0",
+        "不需要进出校，不申请",
+        1
+      ],
+      [
+        "1",
+        "需要申请进校",
+        1
+      ],
+      [
+        "2",
+        "需要申请出校",
+        1
+      ]
+    ],
+    "SelectedValue": null
+  },
   "p1_QiuZZT": {
     "F_Items": [],
     "SelectedValueArray": []
@@ -140,6 +160,35 @@
       ]
     ],
     "SelectedValue": "在上海（校内）"
+  },
+  "p1_P_GuoNei_JinXXQ": {
+    "Required": true,
+    "Hidden": false,
+    "SelectedValueArray": [
+      "宝山"
+    ],
+    "F_Items": [
+      [
+        "宝山",
+        "宝山",
+        1
+      ],
+      [
+        "延长",
+        "延长",
+        1
+      ],
+      [
+        "嘉定",
+        "嘉定",
+        1
+      ],
+      [
+        "新闸路",
+        "新闸路",
+        1
+      ]
+    ]
   },
   "p1_P_GuoNei_ShiFZX": {
     "F_Items": [
@@ -219,6 +268,15 @@
         "",
         ""
       ]
+    ],
+    "SelectedValueArray": [
+      ""
+    ]
+  },
+    "p1_ddlJieDao": {
+    "Hidden": false,
+    "F_Items": [
+      []
     ],
     "SelectedValueArray": [
       ""

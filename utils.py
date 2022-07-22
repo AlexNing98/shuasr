@@ -142,11 +142,13 @@ def cleanIndex(session, html, target, target_url, index_url):
 
 def generateFState(json_file, post_day=None, province=None, city=None, county=None, address=None, in_shanghai=None,
                    in_school=None, in_home=None, sui_img=None, sui_code=None, xing_img=None, xing_code=None, ans=None,
-                   campus=None):
+                   campus=None, entry_campus=None, street=None, in_out=None):
     with open(json_file, 'r', encoding='utf-8') as f:
         json_data = json.load(f)
 
     json_data['p1_BaoSRQ']['Text'] = post_day
+
+    json_data['p1_JinChuSQ']['SelectedValue'] = in_out
 
     json_data['p1_ddlSheng']['SelectedValueArray'][0] = province
     json_data['p1_ddlSheng']['F_Items'][0][0] = province
@@ -160,11 +162,15 @@ def generateFState(json_file, post_day=None, province=None, city=None, county=No
     json_data['p1_ddlXian']['F_Items'][0][0] = county
     json_data['p1_ddlXian']['F_Items'][0][1] = county
 
+    json_data['p1_ddlJieDao']['F_Items'][0] = [street, street, 1, '', '']
+    json_data['p1_ddlJieDao']['SelectedValueArray'][0] = street
+
     json_data['p1_XiangXDZ']['Text'] = address
 
     json_data['p1_P_GuoNei_ShiFSH']['SelectedValue'] = in_shanghai
     json_data['p1_P_GuoNei_ShiFZX']['SelectedValue'] = in_school
     json_data['p1_P_GuoNei_XiaoQu']['SelectedValue'] = campus
+    json_data['p1_P_GuoNei_JinXXQ']['SelectedValueArray'] = entry_campus
     json_data['p1_ShiFZJ']['SelectedValue'] = in_home
 
     json_data['p1_pImages_HFimgSuiSM']['Text'] = sui_code
@@ -198,59 +204,6 @@ def convertAddress(province, city):
     return province + city
 
 
-def updateRiskArea():
-    try:
-        api_url = base64.b64decode('aHR0cHM6Ly9kaXF1LmdlemhvbmcudmlwL2FwaS5waHA=').decode('utf-8')
-        i = 0
-        while True:
-            try:
-                result = requests.get(api_url, timeout=30).json()
-                if result['code'] == 0:
-                    break
-                else:
-                    i += 1
-            except Exception as e:
-                print(e)
-                i += 1
-            if i > 5:
-                print('获取风险地区失败')
-                return False
-        result = result['data']
-        risk_list = []
-        for high in result['highlist']:
-            risk_list.append(high['area_name'].replace(' ', ''))
-        for middle in result['middlelist']:
-            risk_list.append(middle['area_name'].replace(' ', ''))
-        with open('src/risk_area.json', 'w', encoding='utf-8') as f:
-            json.dump(risk_list, f)
-    except Exception as e:
-        print(e)
-
-
-def checkRiskPosition(position):
-    try:
-        with open('src/risk_area.json', 'r', encoding='utf-8') as f:
-            risk_list = json.load(f)
-    except Exception as e:
-        print(e)
-        return position
-    risk_tip = '77yI5rOo77yaKuihqOekuuW9k+WJjeivpeWfjuW4guWtmOWcqOS4remjjumZqeaIlumrmOmjjumZqeWcsOWMuu' \
-               '+8jOW5tuS4jeihqOekuueUqOaIt+WunumZheWIsOiuv+i/h+i/meS6m+S4remrmOmjjumZqeWcsOWMuuOAgu+8iQ=='
-    risk_tip = base64.b64decode(risk_tip).decode('utf-8')
-    position_list = position.split(',')
-    asterisk = False
-    for i in range(len(position_list)):
-        for risk in risk_list:
-            if position_list[i] in risk:
-                position_list[i] += '*'
-                asterisk = True
-                break
-    position = ','.join(position_list)
-    if asterisk:
-        position += risk_tip
-    return position
-
-
 def segmentText(text):
     words = list(text)
     left_mark = list("（")
@@ -275,15 +228,15 @@ def generateXingImage(ph_num, position):
     update = base64.b64decode('5pu05paw5LqO77ya').decode('utf-8') + t.strftime("%Y.%m.%d %H:%M:%S")
     tip = base64.b64decode('5oKo5LqO5YmNMTTlpKnlhoXliLDovr7miJbpgJTnu4/vvJo=').decode('utf-8')
 
-    image = Image.open("src/zxn_1.bin")
+    image = Image.open(os.path.join(abs_path, "src/zxn_1.bin"))
     draw = ImageDraw.Draw(image)
     full_width, full_height = image.size
 
-    clock_font = ImageFont.truetype('src/NotoSansSC-Regular.otf', 32)
-    phone_font = ImageFont.truetype('src/NotoSansSC-Bold.otf', 45)
-    update_font = ImageFont.truetype('src/NotoSansSC-Bold.otf', 48)
-    tip_font = ImageFont.truetype('src/NotoSansSC-Regular.otf', 47)
-    position_font = ImageFont.truetype('src/NotoSansSC-Bold.otf', 47)
+    clock_font = ImageFont.truetype(os.path.join(abs_path, 'src/NotoSansSC-Regular.otf'), 32)
+    phone_font = ImageFont.truetype(os.path.join(abs_path, 'src/NotoSansSC-Bold.otf'), 45)
+    update_font = ImageFont.truetype(os.path.join(abs_path, 'src/NotoSansSC-Bold.otf'), 48)
+    tip_font = ImageFont.truetype(os.path.join(abs_path, 'src/NotoSansSC-Regular.otf'), 47)
+    position_font = ImageFont.truetype(os.path.join(abs_path, 'src/NotoSansSC-Bold.otf'), 47)
 
     phone_width, _ = draw.textsize(phone, phone_font)
     update_width, _ = draw.textsize(update, update_font)
@@ -307,7 +260,7 @@ def generateXingImage(ph_num, position):
         draw_x += word_width
         position = position[1:]
 
-    provider_img = Image.open("src/zxn_2.bin")
+    provider_img = Image.open(os.path.join(abs_path, "src/zxn_2.bin"))
     _, provider_height = provider_img.size
     draw_y += word_height
     image.paste(provider_img, (0, draw_y))
@@ -315,11 +268,11 @@ def generateXingImage(ph_num, position):
     draw_y += provider_height
     draw.rectangle([(0, draw_y), (full_width, full_height)], fill=(43, 166, 103), outline=None)
 
-    footer_img = Image.open("src/zxn_3.bin")
+    footer_img = Image.open(os.path.join(abs_path, "src/zxn_3.bin"))
     _, footer_height = footer_img.size
     image.paste(footer_img, (0, full_height - footer_height))
 
-    icons_img = Image.open("src/zxn_4.bin")
+    icons_img = Image.open(os.path.join(abs_path, "src/zxn_4.bin"))
     icons_width, icons_height = icons_img.size
     icons_num = int(icons_width / icons_height)
     random_icon = random.randint(0, icons_num - 1)
@@ -327,7 +280,7 @@ def generateXingImage(ph_num, position):
     icon_img = icons_img.crop(icon_box)
     image.paste(icon_img, (int((full_width - icons_height) / 2), 885))
 
-    img_path = '%s_xing.jpg' % t.strftime("%Y%m%d%H%M%S%f")
+    img_path = os.path.join(abs_path, '%s_xing.jpg' % t.strftime("%Y%m%d%H%M%S%f"))
     image.save(img_path, 'jpeg')
     return img_path
 
@@ -340,14 +293,14 @@ def generateSuiImage(name):
     time1 = t.strftime("%Y-%m-%d %H:%M:")
     time2 = '%02d' % random.randint(1, 6)
 
-    image = Image.open("src/aan_1.bin")
+    image = Image.open(os.path.join(abs_path, "src/aan_1.bin"))
     draw = ImageDraw.Draw(image)
     full_width, full_height = image.size
 
-    clock_font = ImageFont.truetype('src/NotoSansSC-Regular.otf', 32)
-    name_font = ImageFont.truetype('src/NotoSansSC-Bold.otf', 56)
-    time1_font = ImageFont.truetype('src/NotoSansSC-Regular.otf', 40)
-    time2_font = ImageFont.truetype('src/NotoSansSC-Bold.otf', 48)
+    clock_font = ImageFont.truetype(os.path.join(abs_path, 'src/NotoSansSC-Regular.otf'), 32)
+    name_font = ImageFont.truetype(os.path.join(abs_path, 'src/NotoSansSC-Bold.otf'), 56)
+    time1_font = ImageFont.truetype(os.path.join(abs_path, 'src/NotoSansSC-Regular.otf'), 40)
+    time2_font = ImageFont.truetype(os.path.join(abs_path, 'src/NotoSansSC-Bold.otf'), 48)
 
     name_width, _ = draw.textsize(name, name_font)
     time1_width, time1_height = draw.textsize(time1, time1_font)
@@ -362,7 +315,7 @@ def generateSuiImage(name):
     draw.text((time1_x, time1_y), time1, (0, 0, 0), time1_font)
     draw.text((time2_x, time2_y), time2, (0, 0, 0), time2_font)
 
-    logo_img = Image.open("src/aan_2.bin")
+    logo_img = Image.open(os.path.join(abs_path, "src/aan_2.bin"))
     logo_width, logo_height = [int(s * 0.9) for s in logo_img.size]
     logo_img = logo_img.resize((logo_width, logo_height))
 
@@ -429,11 +382,15 @@ def getLatestInfo(session, force_upload=False):
     in_shanghai = '在上海（校内）'
     in_school = '是'
     campus = '宝山'
+    entry_campus = ['宝山']
     province = '上海'
     city = '上海'
     county = '宝山区'
+    street = '大场镇'
     address = '上海大学宝山校区'
     in_home = '否'
+    # 假期期间默认设置为不需要申请
+    in_out = "0"
     for i, h in enumerate(info_line):
         if 'ShiFSH' in h:
             in_shanghai = jsLine2Json(info_line[i - 1])['Text']
@@ -445,6 +402,12 @@ def getLatestInfo(session, force_upload=False):
             city = jsLine2Json(info_line[i - 1])['SelectedValueArray'][0]
         elif 'ddlXian' in h:
             county = jsLine2Json(info_line[i - 1])['SelectedValueArray'][0]
+        elif 'ddlJieDao' in h:
+            street = jsLine2Json(info_line[i - 1])['SelectedValueArray']
+            if not street:
+                street = -1
+            else:
+                street = street[0]
         elif 'XiangXDZ' in h:
             address = jsLine2Json(info_line[i - 1])['Text']
         elif 'ShiFZJ' in h:
@@ -464,6 +427,22 @@ def getLatestInfo(session, force_upload=False):
                         campus = '宝山'
                 break
 
+        for i, h in enumerate(info_line):
+            if 'JinXXQ' in h:
+                try:
+                    entry_campus = jsLine2Json(info_line[i - 1])['Text'].split(';')
+                except (KeyError, json.JSONDecodeError):
+                    entry_campus = [campus]
+                break
+
+    if province == '上海' and street == '-1':
+        if county == '静安区':
+            street = '大宁路街道'
+        elif county == '嘉定区':
+            street = '嘉定镇街道'
+        elif county == '宝山区':
+            street = '大场镇'
+
     report_url = 'https://selfreport.shu.edu.cn/DayReport.aspx'
     report_html = session.get(url=report_url).text
 
@@ -477,7 +456,7 @@ def getLatestInfo(session, force_upload=False):
     sui_code = xing_code = None
     sui_img = xing_img = None
 
-    if '（校内）' not in in_shanghai or force_upload:
+    if force_upload:
         _code = 'odrp1Za3DEU='
         _img = '/ShowImage.ashx?squrl=oyhA3XzMDCTMwyYAn6kyLt3hxsAoCfpvYGMSocfVfx2RRyKXq9QDVV5cVuq9mN8Mt%2bxyoS93C' \
                '%2b9qawY41vXjo7H18V%2b08RW%2fWDwSfK2TQ8Qc7ob' \
@@ -515,7 +494,6 @@ def getLatestInfo(session, force_upload=False):
             os.remove(sui_img_path)
 
             position = convertAddress(province, city)
-            position = checkRiskPosition(position)
             xing_img_path = generateXingImage(phone_number, position)
             xing_code, xing_img = getImgCodeByUpload(session, 'xing', view_state, report_url, xing_img_path)
             os.remove(xing_img_path)
@@ -526,9 +504,9 @@ def getLatestInfo(session, force_upload=False):
         xing_img = _img if xing_img is None else xing_img
 
     info = dict(
-        vs=view_state, vsg=view_state_generator, f_target=f_target, even_target=even_target,
-        in_shanghai=in_shanghai, in_school=in_school, campus=campus, in_home=in_home,
-        province=province, city=city, county=county, address=address,
+        vs=view_state, vsg=view_state_generator, f_target=f_target, even_target=even_target, in_out=in_out,
+        in_shanghai=in_shanghai, entry_campus=entry_campus, in_school=in_school, campus=campus, in_home=in_home,
+        province=province, city=city, county=county, address=address, street=street,
         sui_code=sui_code, sui_img=sui_img, xing_code=xing_code, xing_img=xing_img, ans=ans
     )
 
@@ -538,11 +516,14 @@ def getLatestInfo(session, force_upload=False):
 def getReportForm(post_day, info):
     view_state = info['vs']
     view_state_generator = info['vsg']
+    in_out = info['in_out']
     province = info['province']
     city = info['city']
     county = info['county']
+    street = info['street']
     address = info['address']
     in_shanghai = info['in_shanghai']
+    entry_campus = info['entry_campus']
     in_school = info['in_school']
     campus = info['campus']
     in_home = info['in_home']
@@ -557,8 +538,9 @@ def getReportForm(post_day, info):
     # temperature = str(round(random.uniform(36.3, 36.7), 1))
 
     f_state = generateFState(
-        json_file=abs_path + '/once.json', post_day=post_day, province=province, city=city, county=county,
-        address=address, in_shanghai=in_shanghai, in_school=in_school, campus=campus, in_home=in_home,
+        json_file=abs_path + '/once.json', in_out=in_out,
+        post_day=post_day, province=province, city=city, county=county, address=address, street=street,
+        in_shanghai=in_shanghai, entry_campus=entry_campus, in_school=in_school, campus=campus, in_home=in_home,
         sui_code=sui_code, sui_img=sui_img, xing_img=xing_img, xing_code=xing_code, ans=ans
     )
 
@@ -581,15 +563,19 @@ def getReportForm(post_day, info):
         'p1$GuoNei': '国内',
         'p1$ddlGuoJia$Value': '-1',
         'p1$ddlGuoJia': '选择国家',
+        'p1$JinChuSQ': in_out,
         'p1$P_GuoNei$ShiFSH': in_shanghai,
         'p1$P_GuoNei$ShiFZX': in_school,
         'p1$P_GuoNei$XiaoQu': campus,
+        'p1$P_GuoNei$JinXXQ': entry_campus,
         'p1$ddlSheng$Value': province,
         'p1$ddlSheng': province,
         'p1$ddlShi$Value': city,
         'p1$ddlShi': city,
         'p1$ddlXian$Value': county,
         'p1$ddlXian': county,
+        'p1$ddlJieDao$Value': street,
+        'p1$ddlJieDao': street,
         'p1$XiangXDZ': address,
         'p1$ShiFZJ': in_home,
         'p1$P_GuoNei$pImages$HFimgSuiSM': sui_code,
@@ -712,12 +698,14 @@ def reportUnreported(session, info, unreported_day):
     print('补报结束')
 
 
-def reportSingleUser(session, form):
+def reportSingleUser(session, form, try_times=None, sleep_time=None, ignore_maintain=False):
     if not session:
         return -1
     if not form:
         return -2
 
+    try_times = 5 if try_times is None else try_times
+    sleep_time = 5 if sleep_time is None else sleep_time
     url = 'https://selfreport.shu.edu.cn/DayReport.aspx'
     report_times = 0
     while True:
@@ -729,13 +717,14 @@ def reportSingleUser(session, form):
         elif 'p1_ctl01_btnReturn' in report_result.text and 'F.alert' not in report_result.text:
             # 表示当前IP被限制
             return -4
-        else:
-            print(report_result.text)
+        elif '维护' in report_result.text and not ignore_maintain:
+            return -5
         report_times += 1
-        if report_times > 5:
+        # print('填报失败，第%s次尝试' % report_times)
+        if report_times > try_times:
             debug_key = [
                 '__EVENTTARGET', 'p1$pnlDangSZS$DangSZS', 'p1$BaoSRQ', 'p1$P_GuoNei$ShiFSH', 'p1$P_GuoNei$ShiFZX',
-                'p1$ShiFZJ', 'F_TARGET', 'p1$P_GuoNei$XiaoQu'
+                'p1$ShiFZJ', 'F_TARGET', 'p1$P_GuoNei$XiaoQu', 'p1$P_GuoNei$JinXXQ', 'p1$ddlJieDao', 'p1$JinChuSQ'
             ]
             debug_privacy_key = [
                 'p1$ddlSheng$Value', 'p1$ddlSheng', 'p1$ddlShi$Value', 'p1$ddlShi', 'p1$ddlXian$Value', 'p1$ddlXian',
@@ -744,12 +733,16 @@ def reportSingleUser(session, form):
             debug_value = dict([(key, form.get(key, None)) for key in debug_key])
             debug_privacy_value = dict(
                 [(key, f'***{str(form.get(key, None))[-1]}, length: {len(str(form.get(key, None)))}')
-                    for key in debug_privacy_key]
+                 for key in debug_privacy_key]
             )
             debug_value.update(debug_privacy_value)
             print('调试信息：\n', json.dumps(debug_value, ensure_ascii=False, indent=4, sort_keys=True))
+            print(report_result.text)
             return 0
-        time.sleep(5)
+        if sleep_time == 0:
+            continue
+        else:
+            time.sleep(sleep_time)
 
 
 def getUsers(config_path):
@@ -866,6 +859,8 @@ def sendMsg(title, desp, api, key):
             text = requests.post(url, data=body, headers=headers).text
             result = json.loads(text)
             return result['code'] == 200
+        else:
+            return False
 
     except Exception as e:
         print(text)
@@ -1079,7 +1074,6 @@ def test(config_path, logs_path):
         print("运行 python3 main.py add 添加用户，运行 python3 main.py send 配置消息发送API")
         return False
 
-    updateRiskArea()
     post_day = getTime().strftime("%Y-%m-%d")
     report_result = reportAllUsers(config_path, logs_path, post_day=post_day)
     if not report_result:
@@ -1142,7 +1136,6 @@ def github():
         print('确保使用的是英文逗号和分号，且用户密码中也不包含英文逗号或分号')
         raise
     logPrint("GitHub Actions 填报开始\n若为第一次使用，耗时可能较长，请耐心等待......")
-    updateRiskArea()
     ovpn_connected = showIP()
     logPrint('已接入校内VPN') if ovpn_connected else logPrint('未接入校内VPN')
     if not ovpn_connected:
@@ -1306,11 +1299,9 @@ def grabRank(username, password, post_day):
     read_msg_result['username'] = username
     READ_MSG_RESULTS.append(read_msg_result)
 
-    url = 'https://selfreport.shu.edu.cn/DayReport.aspx'
-
     try_times = 0
     while True:
-        _info = getLatestInfo(session, force_upload=True)
+        _info = getLatestInfo(session, force_upload=False)
         form = getReportForm(post_day, _info)
         if form:
             break
@@ -1329,20 +1320,17 @@ def grabRank(username, password, post_day):
 
     while True:
         now = getTime()
-        if (now.hour == 0 and now.minute == 59 and now.second >= 57) or now.hour != 0:
-            try_times = 0
-            while True:
-                report_result = session.post(url=url, data=form)
-                if '提交成功' in report_result.text:
-                    GRAB_LOGS['success'].append(username)
-                    return True
-                # else:
-                #     print(report_result.text)
-                try_times += 1
-                if try_times > 800:
-                    print(report_result.text)
-                    GRAB_LOGS['fail'].append(username)
-                    return False
+        if (now.hour == 0 and now.minute == 59 and now.second >= 56) or now.hour != 0:
+            report_result = reportSingleUser(session, form, try_times=800, sleep_time=0, ignore_maintain=True)
+            if report_result == 1:
+                GRAB_LOGS['success'].append(username)
+                return True
+            else:
+                _info = getLatestInfo(session, force_upload=True)
+                form = getReportForm(post_day, _info)
+                reportSingleUser(session, form)
+                GRAB_LOGS['fail'].append(username)
+                return False
         time.sleep(0.5)
 
 
@@ -1398,12 +1386,10 @@ def main(config_path, logs_path):
             is_time = isTimeToReport()
             if (is_time == 0 or is_time == 3) and grab_mode and len(getUsers(config_path)) > 0:
                 post_day = getTime().strftime("%Y-%m-%d")
-                updateRiskArea()
                 report_result = grabRankUsers(config_path, logs_path, post_day)
                 is_reported = True
             elif is_time == 1 and len(getUsers(config_path)) > 0 and not grab_mode:
                 post_day = getTime().strftime("%Y-%m-%d")
-                updateRiskArea()
                 report_result = reportAllUsers(config_path, logs_path, post_day=post_day)
                 is_reported = True
 

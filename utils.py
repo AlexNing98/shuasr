@@ -142,7 +142,8 @@ def cleanIndex(session, html, target, target_url, index_url):
 
 def generateFState(json_file, post_day=None, province=None, city=None, county=None, address=None, in_shanghai=None,
                    in_school=None, in_home=None, sui_img=None, sui_code=None, xing_img=None, xing_code=None, ans=None,
-                   campus=None, entry_campus=None, street=None, in_out=None, risk=None, out_province=None):
+                   campus=None, entry_campus=None, street=None, in_out=None, risk=None, out_province=None,
+                   back_sh=None):
     with open(json_file, 'r', encoding='utf-8') as f:
         json_data = json.load(f)
 
@@ -173,7 +174,10 @@ def generateFState(json_file, post_day=None, province=None, city=None, county=No
     json_data['p1_P_GuoNei_XiaoQu']['SelectedValue'] = campus
     json_data['p1_P_GuoNei_JinXXQ']['SelectedValueArray'] = entry_campus
     json_data['p1_ShiFZJ']['SelectedValue'] = in_home
+
     json_data['p1_CengFWSS']['SelectedValue'] = out_province
+    json_data['p1_DiHRQ']['Text'] = back_sh
+    json_data['p1_DiHRQ']['Required'] = True if not not back_sh else False
 
     json_data['p1_pImages_HFimgSuiSM']['Text'] = sui_code
     json_data['p1_pImages_imgSuiSM']['ImageUrl'] = sui_img
@@ -228,7 +232,7 @@ def generateXingImage(ph_num, position):
     clock = "%s:%s" % (t.hour, t.strftime("%M"))
     phone = ph_num[:3] + '****' + ph_num[-4:] + base64.b64decode('55qE5Yqo5oCB6KGM56iL5Y2h').decode('utf-8')
     update = base64.b64decode('5pu05paw5LqO77ya').decode('utf-8') + t.strftime("%Y.%m.%d %H:%M:%S")
-    tip = base64.b64decode('5oKo5LqO5YmNMTTlpKnlhoXliLDovr7miJbpgJTnu4/vvJo=').decode('utf-8')
+    tip = base64.b64decode('5oKo5LqO5YmNN+WkqeWGheWIsOi+vuaIlumAlOe7j++8mg==').decode('utf-8')
 
     image = Image.open(os.path.join(abs_path, "src/zxn_1.bin"))
     draw = ImageDraw.Draw(image)
@@ -288,6 +292,11 @@ def generateXingImage(ph_num, position):
 
 
 def generateSuiImage(name):
+    """
+    将在未来弃用
+    :param name:
+    :return:
+    """
     t = getTime()
     t -= datetime.timedelta(seconds=random.randint(10, 30))
     clock = "%s:%s" % (t.hour, t.strftime("%M"))
@@ -341,6 +350,7 @@ def getImgCodeByUpload(session, img_type, view_state, report_url, img_path):
     img_type_dict = {'sui': 'p1$P_GuoNei$pImages$fileSuiSM', 'xing': 'p1$P_GuoNei$pImages$fileXingCM'}
     img_upload = open(img_path, 'rb')
     data = {
+        'p1$BaoSRQ': getTime().strftime("%Y-%m-%d"),
         '__EVENTTARGET': img_type_dict[img_type],
         '__VIEWSTATE': view_state,
         'X-FineUI-Ajax': 'true',
@@ -354,6 +364,8 @@ def getImgCodeByUpload(session, img_type, view_state, report_url, img_path):
     _code = None if _ is None else _.group(1)
     _ = re.search(r'ImageUrl&quot;:&quot;(.*?)&quot;}\)', upload_result)
     _img = None if _ is None else _.group(1)
+    if _code is None or _img is None:
+        print('Upload %s image failed' % img_type)
     return _code, _img
 
 
@@ -397,6 +409,8 @@ def getLatestInfo(session, force_upload=False):
     risk = '无'
     # 曾赴外省市
     out_province = '否'
+    # 抵沪日期
+    back_sh = ''
     for i, h in enumerate(info_line):
         if 'ShiFSH' in h:
             in_shanghai = jsLine2Json(info_line[i - 1])['Text']
@@ -436,6 +450,12 @@ def getLatestInfo(session, force_upload=False):
                 out_province = jsLine2Json(info_line[i - 1])['Text']
             except (json.JSONDecodeError, KeyError):
                 out_province = '否'
+                continue
+        elif 'DiHRQ' in h:
+            try:
+                back_sh = jsLine2Json(info_line[i - 1])['Text']
+            except (json.JSONDecodeError, KeyError):
+                back_sh = ''
                 continue
 
     if '（校内）' in in_shanghai and in_school == '是':
@@ -507,16 +527,16 @@ def getLatestInfo(session, force_upload=False):
             p_info_line = html2JsLine(p_info_html)
 
             phone_number = '18888888888'
-            name = '***'
+            # name = '***'
             for i, h in enumerate(p_info_line):
                 if 'ShouJHM' in h:
                     phone_number = jsLine2Json(p_info_line[i - 1])['Text']
-                elif 'XingMing' in h:
-                    name = jsLine2Json(p_info_line[i - 1])['Text']
+                # elif 'XingMing' in h:
+                #     name = jsLine2Json(p_info_line[i - 1])['Text']
 
-            sui_img_path = generateSuiImage(name)
-            sui_code, sui_img = getImgCodeByUpload(session, 'sui', view_state, report_url, sui_img_path)
-            os.remove(sui_img_path)
+            # sui_img_path = generateSuiImage(name)
+            # sui_code, sui_img = getImgCodeByUpload(session, 'sui', view_state, report_url, sui_img_path)
+            # os.remove(sui_img_path)
 
             position = convertAddress(province, city)
             xing_img_path = generateXingImage(phone_number, position)
@@ -531,7 +551,7 @@ def getLatestInfo(session, force_upload=False):
     info = dict(
         vs=view_state, vsg=view_state_generator, f_target=f_target, even_target=even_target, in_out=in_out,
         in_shanghai=in_shanghai, entry_campus=entry_campus, in_school=in_school, campus=campus, in_home=in_home,
-        province=province, city=city, county=county, address=address, street=street, risk=risk,
+        province=province, city=city, county=county, address=address, street=street, risk=risk, back_sh=back_sh,
         sui_code=sui_code, sui_img=sui_img, xing_code=xing_code, xing_img=xing_img, ans=ans, out_province=out_province,
     )
 
@@ -554,6 +574,7 @@ def getReportForm(post_day, info):
     in_home = info['in_home']
     risk = info['risk']
     out_province = info['out_province']
+    back_sh = info['back_sh']
     f_target = info['f_target']
     even_target = info['even_target']
     sui_code = info['sui_code']
@@ -565,7 +586,7 @@ def getReportForm(post_day, info):
     # temperature = str(round(random.uniform(36.3, 36.7), 1))
 
     f_state = generateFState(
-        json_file=abs_path + '/once.json', in_out=in_out, risk=risk, out_province=out_province,
+        json_file=abs_path + '/once.json', in_out=in_out, risk=risk, out_province=out_province, back_sh=back_sh,
         post_day=post_day, province=province, city=city, county=county, address=address, street=street,
         in_shanghai=in_shanghai, entry_campus=entry_campus, in_school=in_school, campus=campus, in_home=in_home,
         sui_code=sui_code, sui_img=sui_img, xing_img=xing_img, xing_code=xing_code, ans=ans
@@ -578,6 +599,7 @@ def getReportForm(post_day, info):
         '__VIEWSTATEGENERATOR': view_state_generator,
         'p1$ChengNuo': 'p1_ChengNuo',
         'p1$pnlDangSZS$DangSZS': ans,
+        'p1$P_QueZXX$CengQZ': '否',
         'p1$BaoSRQ': post_day,
         'p1$DangQSTZK': '良好',
         'p1$TiWen': '',
@@ -606,6 +628,7 @@ def getReportForm(post_day, info):
         'p1$XiangXDZ': address,
         'p1$ShiFZJ': in_home,
         'p1$CengFWSS': out_province,
+        'p1$DiHRQ': back_sh,
         'p1$GaoZDFXLJS': risk,
         'p1$P_GuoNei$pImages$HFimgSuiSM': sui_code,
         'p1$P_GuoNei$pImages$HFimgXingCM': xing_code,
@@ -1033,7 +1056,7 @@ def setSendMsgApi(config_path):
         '方糖气球 https://sct.ftqq.com/',
         '（该接口已弃用）推送加 https://pushplus.hxtrip.com/',
         'Telegram Bot (Key 的格式为 `BOT_TOKEN@CHAT_ID` )',
-        'PushDeer https://github.com/easychen/pushdeer'
+        'PushDeer https://github.com/easychen/pushdeer',
         '推送加PushPlus http://www.pushplus.plus/',
     ]
     send_api = config.get('send_api', 0)
@@ -1330,7 +1353,7 @@ def grabRank(username, password, post_day):
 
     try_times = 0
     while True:
-        _info = getLatestInfo(session, force_upload=False)
+        _info = getLatestInfo(session, force_upload=True)
         form = getReportForm(post_day, _info)
         if form:
             break
